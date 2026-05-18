@@ -1,11 +1,8 @@
 package helen.com.gatewayserver.config;
 
 import helen.com.gatewayserver.filters.route.*;
-import helen.com.gatewayserver.routing.ClientRoutes;
-import helen.com.gatewayserver.routing.NotificationRoutes;
-import helen.com.gatewayserver.routing.OrderRoutes;
-import helen.com.gatewayserver.routing.PaymentRoutes;
-import helen.com.gatewayserver.security.SecurityConstants;
+import helen.com.gatewayserver.routing.*;
+import helen.com.gatewayserver.constants.SecurityConstants;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -26,6 +23,41 @@ public class GatewayRoutesConfig {
     @Bean
     public RouteLocator customRoutes(RouteLocatorBuilder builder) {
         return builder.routes()
+                .route(
+                        "auth-service",
+                        route -> route
+                                .path(AuthRoutes.PATH)
+                                .filters(filters -> filters
+                                        .filter(requestValidationFilter.apply())
+                                        .filter(authenticationFilter.apply())
+                                        .filter(authorizationFilter.hasRole(SecurityConstants.ROLE_USER))
+                                        .filter(userContextFilter.apply())
+                                        .filter(headerEnrichmentFilter.apply())
+                                        .filter(rateLimitFilter.apply())
+                                        .retry(retry -> retry
+                                                .setRetries(3))
+                                        .circuitBreaker(circuit -> circuit
+                                                .setName("authCircuitBreaker")
+                                                .setFallbackUri("forward:/fallback/auth")))
+                                .uri(AuthRoutes.URI)
+                )
+                .route(
+                        "product-service",
+                        route -> route
+                                .path("/api/product/**")
+                                .filters(filters -> filters
+                                        .filter(requestValidationFilter.apply())
+                                        .filter(authenticationFilter.apply())
+                                        .filter(userContextFilter.apply())
+                                        .filter(headerEnrichmentFilter.apply())
+                                        .filter(rateLimitFilter.apply())
+                                        .retry(retry -> retry
+                                                .setRetries(3))
+                                        .circuitBreaker(circuit -> circuit
+                                                .setName("productCircuitBreaker")
+                                                .setFallbackUri("forward:/fallback/products")))
+                                .uri(ProductRoutes.URI)
+                )
                 .route(
                         "cliente-service",
                         route -> route

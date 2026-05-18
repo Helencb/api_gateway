@@ -1,7 +1,7 @@
 package helen.com.gatewayserver.filters.route;
 
 import helen.com.gatewayserver.rateLimit.RedisRateLimitService;
-import helen.com.gatewayserver.security.SecurityConstants;
+import helen.com.gatewayserver.constants.SecurityConstants;
 import helen.com.gatewayserver.util.IpUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cloud.gateway.filter.GatewayFilter;

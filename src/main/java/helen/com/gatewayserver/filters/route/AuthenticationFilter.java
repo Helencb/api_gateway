@@ -2,7 +2,7 @@ package helen.com.gatewayserver.filters.route;
 
 import helen.com.gatewayserver.security.JwtService;
 import helen.com.gatewayserver.security.JwtValidator;
-import helen.com.gatewayserver.security.SecurityConstants;
+import helen.com.gatewayserver.constants.SecurityConstants;
 import helen.com.gatewayserver.security.SecurityContextService;
 import helen.com.gatewayserver.util.HeaderUtils;
 import org.springframework.cloud.gateway.filter.GatewayFilter;

@@ -1,6 +1,6 @@
 package helen.com.gatewayserver.filters.route;
 
-import helen.com.gatewayserver.security.SecurityConstants;
+import helen.com.gatewayserver.constants.SecurityConstants;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.stereotype.Component;
 

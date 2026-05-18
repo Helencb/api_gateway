@@ -1,4 +1,4 @@
-package helen.com.gatewayserver.security;
+package helen.com.gatewayserver.constants;
 
 public final class SecurityConstants {
     private SecurityConstants(){}
