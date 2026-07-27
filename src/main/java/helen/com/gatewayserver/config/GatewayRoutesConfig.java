@@ -124,6 +124,22 @@ public class GatewayRoutesConfig {
                                                 .setFallbackUri("forward:/fallback/notifications")))
                                 .uri(NotificationRoutes.URI)
                 )
+                .route("saga-orchestrator-service",
+                        route -> route
+                                .path(SagaRoutes.PATH)
+                                .filters(filters -> filters
+                                        .filter(requestValidationFilter.apply())
+                                        .filter(authenticationFilter.apply())
+                                        .filter(authorizationFilter.hasRole(SecurityConstants.ROLE_ADMIN))
+                                        .filter(userContextFilter.apply())
+                                        .filter(headerEnrichmentFilter.apply())
+                                        .filter(rateLimitFilter.apply())
+                                        .retry(retry -> retry.setRetries(3))
+                                        .circuitBreaker(circuit -> circuit
+                                                .setName("sagaCircuitBreaker")
+                                                .setFallbackUri("forward:/fallback/sagas")))
+                                .uri(SagaRoutes.URI)
+                )
                 .build();
     }
 }
