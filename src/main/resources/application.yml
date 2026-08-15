@@ -33,7 +33,7 @@ spring:
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
     register-with-eureka: true
     fetch-registry: true
 
@@ -56,9 +56,12 @@ management:
       export:
         enabled: true
 
+# Must be the exact same value as auth-service's "jwt.secret" (JWT_SECRET env
+# var there too) - this gateway validates JWT signatures on its own, it does
+# not fetch the secret from auth-service.
 security:
   jwt:
-    secret: my-super-secret-key-my-super-secret-key
+    secret: ${JWT_SECRET:my-super-secret-key-my-super-secret-key}
 
 resilience4j:
   circuitbreaker:

@@ -301,6 +301,27 @@ Microservice
 
 # Rotas disponíveis
 
+## Auth Service
+
+Rotas públicas (sem JWT):
+
+```http
+/api/auth/**       -> register, login, refresh
+/api/password/**   -> forgot, reset
+/api/oauth2/**     -> login social (Google)
+/api/mfa/verify    -> valida código TOTP mid-login
+```
+
+Rotas autenticadas (exigem `Authorization: Bearer <jwt>` com role `USER`):
+
+```http
+/api/mfa/setup
+/api/mfa/enable
+/api/sessions/**
+```
+
+Todas roteadas para `lb://AUTH-SERVICE` com `StripPrefix=1` (o auth-service recebe o path sem o `/api`).
+
 ## Client Service
 
 ```http
