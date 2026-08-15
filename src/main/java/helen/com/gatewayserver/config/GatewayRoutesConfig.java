@@ -23,10 +23,89 @@ public class GatewayRoutesConfig {
     @Bean
     public RouteLocator customRoutes(RouteLocatorBuilder builder) {
         return builder.routes()
+                // /auth/register, /auth/login and /auth/refresh are public by design
+                // (there is no JWT yet) - this route must NOT go through
+                // authenticationFilter/authorizationFilter, unlike the other
+                // downstream services below.
                 .route(
                         "auth-service",
                         route -> route
                                 .path(AuthRoutes.PATH)
+                                .filters(filters -> filters
+                                        .filter(requestValidationFilter.apply())
+                                        .filter(headerEnrichmentFilter.apply())
+                                        .filter(rateLimitFilter.apply())
+                                        .stripPrefix(1)
+                                        .retry(retry -> retry
+                                                .setRetries(3))
+                                        .circuitBreaker(circuit -> circuit
+                                                .setName("authCircuitBreaker")
+                                                .setFallbackUri("forward:/fallback/auth")))
+                                .uri(AuthRoutes.URI)
+                )
+                // Password reset ("esqueci minha senha") is also public - the whole
+                // point is to recover access without being logged in.
+                .route(
+                        "password-service",
+                        route -> route
+                                .path(PasswordRoutes.PATH)
+                                .filters(filters -> filters
+                                        .filter(requestValidationFilter.apply())
+                                        .filter(headerEnrichmentFilter.apply())
+                                        .filter(rateLimitFilter.apply())
+                                        .stripPrefix(1)
+                                        .retry(retry -> retry
+                                                .setRetries(3))
+                                        .circuitBreaker(circuit -> circuit
+                                                .setName("authCircuitBreaker")
+                                                .setFallbackUri("forward:/fallback/auth")))
+                                .uri(PasswordRoutes.URI)
+                )
+                // OAuth2 social login redirect/callback dance happens before the
+                // caller has a JWT - must stay public too.
+                .route(
+                        "oauth2-service",
+                        route -> route
+                                .path(OAuth2Routes.PATH)
+                                .filters(filters -> filters
+                                        .filter(requestValidationFilter.apply())
+                                        .filter(headerEnrichmentFilter.apply())
+                                        .filter(rateLimitFilter.apply())
+                                        .stripPrefix(1)
+                                        .retry(retry -> retry
+                                                .setRetries(3))
+                                        .circuitBreaker(circuit -> circuit
+                                                .setName("authCircuitBreaker")
+                                                .setFallbackUri("forward:/fallback/auth")))
+                                .uri(OAuth2Routes.URI)
+                )
+                // /mfa/verify is called mid-login (after AuthService.login returns
+                // mfaRequired=true, before any JWT exists) so it's public too. Must
+                // be declared before "mfa-service" below so this more specific path
+                // wins the route match.
+                .route(
+                        "mfa-verify-service",
+                        route -> route
+                                .path(MfaVerifyRoutes.PATH)
+                                .filters(filters -> filters
+                                        .filter(requestValidationFilter.apply())
+                                        .filter(headerEnrichmentFilter.apply())
+                                        .filter(rateLimitFilter.apply())
+                                        .stripPrefix(1)
+                                        .retry(retry -> retry
+                                                .setRetries(3))
+                                        .circuitBreaker(circuit -> circuit
+                                                .setName("authCircuitBreaker")
+                                                .setFallbackUri("forward:/fallback/auth")))
+                                .uri(MfaVerifyRoutes.URI)
+                )
+                // /mfa/setup and /mfa/enable require an authenticated user (the
+                // controller reads it from Authentication) - protected like the
+                // other downstream services.
+                .route(
+                        "mfa-service",
+                        route -> route
+                                .path(MfaRoutes.PATH)
                                 .filters(filters -> filters
                                         .filter(requestValidationFilter.apply())
                                         .filter(authenticationFilter.apply())
@@ -34,12 +113,32 @@ public class GatewayRoutesConfig {
                                         .filter(userContextFilter.apply())
                                         .filter(headerEnrichmentFilter.apply())
                                         .filter(rateLimitFilter.apply())
+                                        .stripPrefix(1)
                                         .retry(retry -> retry
                                                 .setRetries(3))
                                         .circuitBreaker(circuit -> circuit
                                                 .setName("authCircuitBreaker")
                                                 .setFallbackUri("forward:/fallback/auth")))
-                                .uri(AuthRoutes.URI)
+                                .uri(MfaRoutes.URI)
+                )
+                .route(
+                        "session-service",
+                        route -> route
+                                .path(SessionRoutes.PATH)
+                                .filters(filters -> filters
+                                        .filter(requestValidationFilter.apply())
+                                        .filter(authenticationFilter.apply())
+                                        .filter(authorizationFilter.hasRole(SecurityConstants.ROLE_USER))
+                                        .filter(userContextFilter.apply())
+                                        .filter(headerEnrichmentFilter.apply())
+                                        .filter(rateLimitFilter.apply())
+                                        .stripPrefix(1)
+                                        .retry(retry -> retry
+                                                .setRetries(3))
+                                        .circuitBreaker(circuit -> circuit
+                                                .setName("authCircuitBreaker")
+                                                .setFallbackUri("forward:/fallback/auth")))
+                                .uri(SessionRoutes.URI)
                 )
                 .route(
                         "product-service",
